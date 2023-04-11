@@ -3,6 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect,Http404
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render
+from django.db.models import Q
 
 # Create your views here.
 from .models import Post
@@ -10,8 +11,8 @@ from .forms import PostForm
 
 
 def post_create(request):
-    if not request.user.is_authenticated():
-        raise Http404
+    # if not request.user.is_authenticated():
+    #     raise Http404
     form = PostForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         instance = form.save(commit=False)
@@ -48,6 +49,11 @@ def post_detail(request, id=None):
 
 def post_list(request):
     queryset_list = Post.objects.all().order_by("-timestamp")
+    
+    query=request.GET.get("q")
+    if query:
+        queryset_list=queryset_list.filter(Q(title__icontains=query) |Q(content__icontains=query)|Q(user__first_name__icontains=query)).distinct()
+        # queryset_list=queryset_list.filter(title__icontains=query)
     paginator = Paginator(queryset_list, 2)
     page = request.GET.get('page')
     try:
